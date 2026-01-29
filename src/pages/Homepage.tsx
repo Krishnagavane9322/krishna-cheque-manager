@@ -52,7 +52,7 @@ const Homepage = () => {
             <Button variant="gold" size="xl">
               Explore Collection
             </Button>
-            <Button variant="outline" size="xl" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+            <Button variant="outline" size="xl" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
               Contact Us
             </Button>
           </div>
