@@ -7,9 +7,10 @@ interface InputProps extends React.ComponentProps<"input"> {
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, label, ...props }, ref) => {
+  ({ className, type, label, placeholder, ...props }, ref) => {
     const [focused, setFocused] = React.useState(false);
-    const [hasValue, setHasValue] = React.useState(!!props.defaultValue || !!props.value);
+    const isDateTime = ["date", "time", "datetime-local", "month", "week"].includes(type || "");
+    const hasValue = !!props.value || !!props.defaultValue || isDateTime;
 
     if (label) {
       return (
@@ -38,13 +39,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             }}
             onBlur={(e) => {
               setFocused(false);
-              setHasValue(!!e.target.value);
               props.onBlur?.(e);
             }}
             onChange={(e) => {
-              setHasValue(!!e.target.value);
               props.onChange?.(e);
             }}
+            placeholder={focused || hasValue ? placeholder : ""}
             {...props}
           />
         </div>
@@ -59,6 +59,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className
         )}
         ref={ref}
+        placeholder={placeholder}
         {...props}
       />
     );

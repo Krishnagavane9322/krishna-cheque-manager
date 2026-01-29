@@ -9,12 +9,10 @@ const Homepage = () => {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-bold text-lg">KN</span>
-            </div>
-            <span className="font-display text-xl font-semibold text-foreground">Krishna Nagesh</span>
-          </div>
+          <Link to="/" className="flex items-center gap-3">
+            <img src="/logo.png" alt="KNC Logo" className="w-12 h-12 object-contain" />
+            <span className="font-display text-xl font-semibold text-foreground">Krishna Nagesh Collection</span>
+          </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#about" className="text-muted-foreground hover:text-foreground transition-colors">About</a>
             <a href="#services" className="text-muted-foreground hover:text-foreground transition-colors">Services</a>
@@ -49,12 +47,16 @@ const Homepage = () => {
             quality, and timeless style for every occasion.
           </p>
           <div className="animate-fade-up flex flex-col sm:flex-row gap-4 justify-center" style={{ animationDelay: "0.4s" }}>
-            <Button variant="gold" size="xl">
-              Explore Collection
-            </Button>
-            <Button variant="outline" size="xl" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
-              Contact Us
-            </Button>
+            <a href="#services">
+              <Button variant="gold" size="xl">
+                Explore Collection
+              </Button>
+            </a>
+            <a href="#contact">
+              <Button variant="outline" size="xl" className="bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
+                Contact Us
+              </Button>
+            </a>
           </div>
         </div>
 
@@ -84,7 +86,7 @@ const Homepage = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Phone</p>
-                    <p className="font-medium text-foreground">+91 98765 43210</p>
+                    <p className="font-medium text-foreground">+91 7620666552</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -99,17 +101,24 @@ const Homepage = () => {
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-square rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 p-8">
-                <div className="w-full h-full rounded-xl bg-primary/10 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-32 h-32 mx-auto rounded-full bg-primary flex items-center justify-center mb-6">
-                      <span className="text-primary-foreground font-display font-bold text-5xl">KN</span>
-                    </div>
-                    <h3 className="font-display text-2xl font-bold text-foreground">Krishna Nagesh</h3>
-                    <p className="text-muted-foreground mt-2">Founder & Owner</p>
+            <div className="relative group animate-fade-up max-w-[400px] mx-auto">
+              <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border-4 border-white dark:border-gray-800 transition-transform duration-500 group-hover:scale-[1.02]">
+                <img 
+                  src="/owner.jpg" 
+                  alt="Krishna Nagesh" 
+                  className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-6">
+                  <div className="text-white">
+                    <p className="font-display text-lg font-bold uppercase tracking-wider">Maroti Gavane</p>
+                    <p className="text-xs text-white/80">Owner of Krishna Nagesh Collection</p>
                   </div>
                 </div>
               </div>
+              {/* Decorative elements */}
+              <div className="absolute -top-3 -right-3 w-16 h-16 bg-accent/20 rounded-full blur-xl -z-10 group-hover:bg-accent/40 transition-colors" />
+              <div className="absolute -bottom-3 -left-3 w-20 h-20 bg-primary/10 rounded-full blur-2xl -z-10 group-hover:bg-primary/20 transition-colors" />
+            </div>
             </div>
           </div>
         </div>
@@ -126,10 +135,10 @@ const Homepage = () => {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { title: "Men's Wear", description: "Premium suits, shirts, and traditional wear for the modern gentleman." },
-              { title: "Women's Collection", description: "Elegant sarees, kurtas, and contemporary fashion for every occasion." },
-              { title: "Kids Fashion", description: "Stylish and comfortable clothing for your little ones." },
-              { title: "Custom Tailoring", description: "Personalized fitting and alterations for the perfect look." },
+              { title: "Bridal Collection", description: "Exquisite hand-crafted lehengas and wedding ensembles for your special day." },
+              { title: "Party Wear", description: "Designer gowns, sarees, and premium outfits for every celebration." },
+              { title: "Men's Ethnic", description: "Elegant sherwanis, bandhgalas, and traditional wear for men." },
+              { title: "Kids Wear", description: "Cute and stylish ethnic outfits and comfortable clothing for children." },
             ].map((service, index) => (
               <Card 
                 key={service.title} 
@@ -139,7 +148,7 @@ const Homepage = () => {
               >
                 <CardContent className="p-6">
                   <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <div className="w-6 h-6 rounded-full bg-accent" />
+                    <img src="/logo.png" alt="Icon" className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <h3 className="font-display text-xl font-semibold text-foreground mb-2">{service.title}</h3>
                   <p className="text-muted-foreground text-sm">{service.description}</p>
@@ -166,7 +175,7 @@ const Homepage = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Address</h4>
-                    <p className="text-muted-foreground">123 Fashion Street, Main Market<br />City Center, State - 400001</p>
+                    <p className="text-muted-foreground">Bus Stop, Jalkot Road, Chatrapati Shivaji Chowk<br />Jamb (b.k), Maharashtra - 431716</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -175,16 +184,29 @@ const Homepage = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Business Hours</h4>
-                    <p className="text-muted-foreground">Monday - Saturday: 10:00 AM - 9:00 PM<br />Sunday: 11:00 AM - 6:00 PM</p>
+                    <p className="text-muted-foreground">Monday - Sunday: 08:00 AM -10:00 PM<br /></p>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl overflow-hidden shadow-card bg-muted h-80 flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Map Location</p>
-              </div>
+            <div className="rounded-2xl overflow-hidden shadow-card bg-muted h-96 relative group">
+              <iframe
+                src="https://maps.google.com/maps?q=Krishna%20Nagesh%20Collection%20Jalkot%20Road%20Jamb%20Maharashtra&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                title="Google Maps Location"
+              ></iframe>
+              <a 
+                href="https://maps.app.goo.gl/CW6oM5SkzMZhqBUs6" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="absolute bottom-4 right-4 bg-background/90 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-semibold shadow-md hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+              >
+                Open in Google Maps
+              </a>
             </div>
           </div>
         </div>
@@ -196,10 +218,8 @@ const Homepage = () => {
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
-                  <span className="text-accent-foreground font-display font-bold text-lg">KN</span>
-                </div>
-                <span className="font-display text-xl font-semibold">Krishna Nagesh</span>
+                <img src="/logo.png" alt="KNC Logo" className="w-10 h-10 object-contain" />
+                <span className="font-display text-xl font-semibold">Krishna Nagesh Collection</span>
               </div>
               <p className="text-primary-foreground/70 text-sm">
                 Premium fashion destination offering quality apparel for the entire family.
@@ -229,7 +249,7 @@ const Homepage = () => {
             </div>
           </div>
           <div className="border-t border-primary-foreground/20 pt-8 text-center text-sm text-primary-foreground/60">
-            <p>© 2024 Krishna Nagesh Collection. All rights reserved.</p>
+            <p>© 2026 Krishna Nagesh Collection. All rights reserved.</p>
           </div>
         </div>
       </footer>

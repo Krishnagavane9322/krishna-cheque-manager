@@ -1,37 +1,49 @@
-import { useState } from "react";
-import { Search, Bell, AlertTriangle, Clock, CheckCircle, Calendar, Filter } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Search, Bell, AlertTriangle, Clock, CheckCircle, Calendar, Filter, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminLayout from "@/components/AdminLayout";
+import { chequesApi } from "@/api/api";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 interface Reminder {
-  id: number;
+  _id: string;
   chequeNumber: string;
-  partyName: string;
+  partyId: {
+    _id: string;
+    name: string;
+  };
   amount: number;
   depositDate: string;
   daysLeft: number;
   status: "overdue" | "due-today" | "upcoming" | "cleared";
 }
 
-const reminders: Reminder[] = [
-  { id: 1, chequeNumber: "CHQ001230", partyName: "Mehta Clothings", amount: 35000, depositDate: "2024-01-12", daysLeft: -3, status: "overdue" },
-  { id: 2, chequeNumber: "CHQ001231", partyName: "Agarwal Fabrics", amount: 42000, depositDate: "2024-01-13", daysLeft: -2, status: "overdue" },
-  { id: 3, chequeNumber: "CHQ001232", partyName: "Sharma Textiles", amount: 45000, depositDate: "2024-01-15", daysLeft: 0, status: "due-today" },
-  { id: 4, chequeNumber: "CHQ001233", partyName: "Kumar Collections", amount: 28000, depositDate: "2024-01-15", daysLeft: 0, status: "due-today" },
-  { id: 5, chequeNumber: "CHQ001234", partyName: "Gupta Traders", amount: 56000, depositDate: "2024-01-17", daysLeft: 2, status: "upcoming" },
-  { id: 6, chequeNumber: "CHQ001235", partyName: "Singh Enterprises", amount: 91000, depositDate: "2024-01-18", daysLeft: 3, status: "upcoming" },
-  { id: 7, chequeNumber: "CHQ001236", partyName: "Patel & Sons", amount: 32000, depositDate: "2024-01-19", daysLeft: 4, status: "upcoming" },
-  { id: 8, chequeNumber: "CHQ001237", partyName: "Jain Textiles", amount: 67000, depositDate: "2024-01-20", daysLeft: 5, status: "upcoming" },
-  { id: 9, chequeNumber: "CHQ001238", partyName: "Verma Clothings", amount: 48000, depositDate: "2024-01-10", daysLeft: 0, status: "cleared" },
-  { id: 10, chequeNumber: "CHQ001239", partyName: "Kapoor Fabrics", amount: 73000, depositDate: "2024-01-08", daysLeft: 0, status: "cleared" },
-];
+// Mock data removed to use real API
 
 const AdminReminders = () => {
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+
+  useEffect(() => {
+    fetchReminders();
+  }, []);
+
+  const fetchReminders = async () => {
+    try {
+      const response = await chequesApi.getReminders();
+      setReminders(response.data);
+    } catch (err) {
+      toast.error("Failed to fetch reminders");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filterReminders = (status?: string) => {
     let filtered = reminders;
@@ -46,7 +58,7 @@ const AdminReminders = () => {
 
     if (searchQuery) {
       filtered = filtered.filter(r =>
-        r.partyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.partyId.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.chequeNumber.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
@@ -202,46 +214,52 @@ const AdminReminders = () => {
         </Card>
 
         {/* Reminders List */}
-        <div className="space-y-3">
-          {filterReminders(activeTab).map((reminder, index) => (
-            <Card 
-              key={reminder.id}
-              variant="elevated"
-              className={`animate-fade-up ${
-                reminder.status === "overdue" ? "border-l-4 border-l-destructive" :
-                reminder.status === "due-today" ? "border-l-4 border-l-warning" :
-                reminder.status === "upcoming" && reminder.daysLeft <= 3 ? "border-l-4 border-l-accent" :
-                ""
-              }`}
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      {getStatusIcon(reminder.status)}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filterReminders(activeTab).map((reminder, index) => (
+              <Card 
+                key={reminder._id}
+                variant="elevated"
+                className={`animate-fade-up ${
+                  reminder.status === "overdue" ? "border-l-4 border-l-destructive" :
+                  reminder.status === "due-today" ? "border-l-4 border-l-warning" :
+                  reminder.status === "upcoming" && reminder.daysLeft <= 3 ? "border-l-4 border-l-accent" :
+                  ""
+                }`}
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        {getStatusIcon(reminder.status)}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">{reminder.partyId?.name || "N/A"}</p>
+                        <p className="text-sm text-muted-foreground font-mono">{reminder.chequeNumber}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-foreground">{reminder.partyName}</p>
-                      <p className="text-sm text-muted-foreground font-mono">{reminder.chequeNumber}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+                      <div className="text-left sm:text-right">
+                        <p className="text-lg font-display font-semibold text-foreground">
+                          ₹{reminder.amount.toLocaleString()}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Deposit: {format(new Date(reminder.depositDate), 'dd MMM yyyy')}</p>
+                      </div>
+                      <div className="sm:w-32 sm:text-right">
+                        {getStatusLabel(reminder.status, reminder.daysLeft)}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
-                    <div className="text-left sm:text-right">
-                      <p className="text-lg font-display font-semibold text-foreground">
-                        ₹{reminder.amount.toLocaleString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Deposit: {reminder.depositDate}</p>
-                    </div>
-                    <div className="sm:w-32 sm:text-right">
-                      {getStatusLabel(reminder.status, reminder.daysLeft)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {filterReminders(activeTab).length === 0 && (
           <div className="text-center py-12">

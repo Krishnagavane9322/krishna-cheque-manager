@@ -1,61 +1,75 @@
-import { useState } from "react";
-import { Users, FileText, Clock, CheckCircle, Plus, ArrowUpRight, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Users, FileText, Clock, CheckCircle, Plus, ArrowUpRight, TrendingUp, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
+import { chequesApi } from "@/api/api";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
-const statsData = [
-  { 
-    title: "Total Parties", 
-    value: "24", 
-    change: "+3 this month",
-    icon: Users,
-    color: "text-primary",
-    bgColor: "bg-primary/10"
-  },
-  { 
-    title: "Total Cheques", 
-    value: "156", 
-    change: "+12 this month",
-    icon: FileText,
-    color: "text-accent",
-    bgColor: "bg-accent/10"
-  },
-  { 
-    title: "Pending Deposits", 
-    value: "18", 
-    change: "Due this week: 5",
-    icon: Clock,
-    color: "text-warning",
-    bgColor: "bg-warning/10"
-  },
-  { 
-    title: "Cleared Cheques", 
-    value: "128", 
-    change: "+8 this month",
-    icon: CheckCircle,
-    color: "text-success",
-    bgColor: "bg-success/10"
-  },
-];
-
-const recentCheques = [
-  { id: 1, partyName: "Sharma Textiles", amount: 45000, date: "2024-01-15", status: "pending" },
-  { id: 2, partyName: "Kumar Fabrics", amount: 78500, date: "2024-01-14", status: "deposited" },
-  { id: 3, partyName: "Patel & Sons", amount: 32000, date: "2024-01-13", status: "cleared" },
-  { id: 4, partyName: "Gupta Traders", amount: 56000, date: "2024-01-12", status: "pending" },
-  { id: 5, partyName: "Singh Enterprises", amount: 91000, date: "2024-01-11", status: "cleared" },
-];
-
-const upcomingDeposits = [
-  { partyName: "Sharma Textiles", amount: 45000, dueDate: "2024-01-18", daysLeft: 3 },
-  { partyName: "Gupta Traders", amount: 56000, dueDate: "2024-01-19", daysLeft: 4 },
-  { partyName: "Mehta Collections", amount: 28000, dueDate: "2024-01-20", daysLeft: 5 },
-];
+// Mock data removed to use real API
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await chequesApi.getStats();
+      setDashboardData(response.data);
+    } catch (err) {
+      toast.error("Failed to fetch dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const statsCards = [
+    { 
+      title: "Total Parties", 
+      value: dashboardData?.stats.totalParties || 0, 
+      icon: Users,
+      color: "text-primary",
+      bgColor: "bg-primary/10"
+    },
+    { 
+      title: "Total Cheques", 
+      value: dashboardData?.stats.totalCheques || 0, 
+      icon: FileText,
+      color: "text-accent",
+      bgColor: "bg-accent/10"
+    },
+    { 
+      title: "Pending Deposits", 
+      value: dashboardData?.stats.pendingDeposits || 0, 
+      icon: Clock,
+      color: "text-warning",
+      bgColor: "bg-warning/10"
+    },
+    { 
+      title: "Cleared Cheques", 
+      value: dashboardData?.stats.clearedCheques || 0, 
+      icon: CheckCircle,
+      color: "text-success",
+      bgColor: "bg-success/10"
+    },
+  ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -93,7 +107,7 @@ const AdminDashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {statsData.map((stat, index) => (
+          {statsCards.map((stat, index) => (
             <Card 
               key={stat.title} 
               variant="elevated" 
@@ -111,7 +125,6 @@ const AdminDashboard = () => {
                   <p className="text-3xl font-display font-bold text-foreground">{stat.value}</p>
                   <p className="text-sm text-muted-foreground mt-1">{stat.title}</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-3">{stat.change}</p>
               </CardContent>
             </Card>
           ))}
@@ -140,11 +153,11 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {recentCheques.map((cheque) => (
-                      <tr key={cheque.id} className="hover:bg-muted/50 transition-colors">
-                        <td className="py-4 text-sm font-medium text-foreground">{cheque.partyName}</td>
+                    {dashboardData?.recentCheques.map((cheque: any) => (
+                      <tr key={cheque._id} className="hover:bg-muted/50 transition-colors">
+                        <td className="py-4 text-sm font-medium text-foreground">{cheque.partyId?.name || "N/A"}</td>
                         <td className="py-4 text-sm text-foreground">₹{cheque.amount.toLocaleString()}</td>
-                        <td className="py-4 text-sm text-muted-foreground">{cheque.date}</td>
+                        <td className="py-4 text-sm text-muted-foreground">{format(new Date(cheque.depositDate), 'dd MMM yyyy')}</td>
                         <td className="py-4">{getStatusBadge(cheque.status)}</td>
                       </tr>
                     ))}
@@ -164,29 +177,35 @@ const AdminDashboard = () => {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {upcomingDeposits.map((deposit, index) => (
-                <div 
-                  key={index} 
-                  className={`p-4 rounded-lg border ${
-                    deposit.daysLeft <= 3 
-                      ? "bg-warning/5 border-warning/20" 
-                      : "bg-muted/50 border-transparent"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="font-medium text-foreground text-sm">{deposit.partyName}</p>
-                    <span className={`text-xs font-medium ${
-                      deposit.daysLeft <= 3 ? "text-warning" : "text-muted-foreground"
-                    }`}>
-                      {deposit.daysLeft} days left
-                    </span>
+              {dashboardData?.upcomingDeposits.map((deposit: any, index: number) => {
+                const daysLeft = Math.ceil((new Date(deposit.depositDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                return (
+                  <div 
+                    key={index} 
+                    className={`p-4 rounded-lg border ${
+                      daysLeft <= 3 
+                        ? "bg-warning/5 border-warning/20" 
+                        : "bg-muted/50 border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="font-medium text-foreground text-sm">{deposit.partyId?.name || "N/A"}</p>
+                      <span className={`text-xs font-medium ${
+                        daysLeft <= 3 ? "text-warning" : "text-muted-foreground"
+                      }`}>
+                        {daysLeft <= 0 ? "Due today" : `${daysLeft} days left`}
+                      </span>
+                    </div>
+                    <p className="text-lg font-display font-semibold text-foreground">
+                      ₹{deposit.amount.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Due: {format(new Date(deposit.depositDate), 'dd MMM yyyy')}</p>
                   </div>
-                  <p className="text-lg font-display font-semibold text-foreground">
-                    ₹{deposit.amount.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Due: {deposit.dueDate}</p>
-                </div>
-              ))}
+                );
+              })}
+              {dashboardData?.upcomingDeposits.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-4">No upcoming deposits</p>
+              )}
             </CardContent>
           </Card>
         </div>

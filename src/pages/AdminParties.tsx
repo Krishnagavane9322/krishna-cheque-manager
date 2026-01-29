@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { Plus, Search, Edit2, Trash2, X, Building2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Search, Edit2, Trash2, X, Building2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import AdminLayout from "@/components/AdminLayout";
+import { partiesApi } from "@/api/api";
+import { toast } from "sonner";
 
 interface Party {
-  id: number;
+  _id: string;
   name: string;
   address: string;
   contact: string;
@@ -15,16 +17,12 @@ interface Party {
   gst?: string;
 }
 
-const initialParties: Party[] = [
-  { id: 1, name: "Sharma Textiles", address: "123 Textile Market, Mumbai", contact: "9876543210", email: "sharma@textiles.com", gst: "27AABCS1234A1ZV" },
-  { id: 2, name: "Kumar Fabrics", address: "456 Fabric Lane, Delhi", contact: "9876543211", email: "kumar@fabrics.com", gst: "07AABCK5678B2ZW" },
-  { id: 3, name: "Patel & Sons", address: "789 Trading Hub, Ahmedabad", contact: "9876543212", email: "patel@sons.com" },
-  { id: 4, name: "Gupta Traders", address: "321 Market Street, Jaipur", contact: "9876543213", email: "gupta@traders.com", gst: "08AABCG9012C3ZX" },
-  { id: 5, name: "Singh Enterprises", address: "654 Business Park, Chandigarh", contact: "9876543214", email: "singh@enterprises.com" },
-];
+// Mock data removed to use real API
 
 const AdminParties = () => {
-  const [parties, setParties] = useState<Party[]>(initialParties);
+  const [parties, setParties] = useState<Party[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingParty, setEditingParty] = useState<Party | null>(null);
@@ -35,6 +33,21 @@ const AdminParties = () => {
     email: "",
     gst: "",
   });
+
+  useEffect(() => {
+    fetchParties();
+  }, []);
+
+  const fetchParties = async () => {
+    try {
+      const response = await partiesApi.getAll();
+      setParties(response.data);
+    } catch (err) {
+      toast.error("Failed to fetch parties");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredParties = parties.filter(party =>
     party.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,26 +71,37 @@ const AdminParties = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingParty) {
-      setParties(parties.map(p => 
-        p.id === editingParty.id 
-          ? { ...p, ...formData } 
-          : p
-      ));
-    } else {
-      const newParty: Party = {
-        id: Date.now(),
-        ...formData,
-      };
-      setParties([...parties, newParty]);
+    setSubmitting(true);
+    try {
+      if (editingParty) {
+        const response = await partiesApi.update(editingParty._id, formData);
+        setParties(parties.map(p => p._id === editingParty._id ? response.data : p));
+        toast.success("Party updated successfully");
+      } else {
+        const response = await partiesApi.create(formData);
+        setParties([...parties, response.data]);
+        toast.success("Party added successfully");
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      toast.error("Failed to save party");
+    } finally {
+      setSubmitting(false);
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = (id: number) => {
-    setParties(parties.filter(p => p.id !== id));
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this party?")) {
+      try {
+        await partiesApi.delete(id);
+        setParties(parties.filter(p => p._id !== id));
+        toast.success("Party deleted successfully");
+      } catch (err) {
+        toast.error("Failed to delete party");
+      }
+    }
   };
 
   return (
@@ -138,8 +162,9 @@ const AdminParties = () => {
                   <Button type="button" variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="flex-1">
-                    {editingParty ? "Update" : "Add"} Party
+                  <Button type="submit" className="flex-1" disabled={submitting}>
+                    {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    {editingParty ? (submitting ? "Updating..." : "Update") : (submitting ? "Adding..." : "Add")} Party
                   </Button>
                 </div>
               </form>
@@ -163,41 +188,47 @@ const AdminParties = () => {
         </Card>
 
         {/* Parties Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredParties.map((party, index) => (
-            <Card 
-              key={party.id} 
-              variant="elevated" 
-              className="hover-lift animate-fade-up"
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-primary" />
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredParties.map((party, index) => (
+              <Card 
+                key={party._id} 
+                variant="elevated" 
+                className="hover-lift animate-fade-up"
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Building2 className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenModal(party)}>
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(party._id)} className="text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenModal(party)}>
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(party.id)} className="text-destructive hover:text-destructive">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                  <h3 className="font-display text-lg font-semibold text-foreground mb-2">{party.name}</h3>
+                  <div className="space-y-1 text-sm">
+                    <p className="text-muted-foreground">{party.address}</p>
+                    <p className="text-muted-foreground">{party.contact}</p>
+                    <p className="text-muted-foreground">{party.email}</p>
+                    {party.gst && (
+                      <p className="text-xs text-accent font-medium mt-2">GST: {party.gst}</p>
+                    )}
                   </div>
-                </div>
-                <h3 className="font-display text-lg font-semibold text-foreground mb-2">{party.name}</h3>
-                <div className="space-y-1 text-sm">
-                  <p className="text-muted-foreground">{party.address}</p>
-                  <p className="text-muted-foreground">{party.contact}</p>
-                  <p className="text-muted-foreground">{party.email}</p>
-                  {party.gst && (
-                    <p className="text-xs text-accent font-medium mt-2">GST: {party.gst}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {filteredParties.length === 0 && (
           <div className="text-center py-12">

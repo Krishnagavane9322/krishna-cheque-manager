@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, ReactNode } from "react";
+import { useState, createContext, useContext, ReactNode, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -10,10 +10,25 @@ import {
   LogOut, 
   ChevronRight,
   Sun,
-  Moon
+  Moon,
+  User,
+  AlertTriangle,
+  Clock,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { chequesApi } from "@/api/api";
+import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface SidebarContextType {
   isOpen: boolean;
@@ -38,8 +53,59 @@ const navItems = [
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Load user from localStorage
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    } else {
+      // If no user, redirect to login
+      navigate('/admin/login');
+    }
+
+    // Fetch notifications/reminders
+    fetchNotifications();
+  }, [navigate]);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoadingNotifications(true);
+      const response = await chequesApi.getReminders();
+      // Filter for important alerts (overdue or due today) and limit to 5
+      const alerts = response.data
+        .filter((n: any) => n.status === 'overdue' || n.status === 'due-today')
+        .sort((a: any, b: any) => {
+          if (a.status === 'overdue' && b.status !== 'overdue') return -1;
+          if (a.status !== 'overdue' && b.status === 'overdue') return 1;
+          return 0;
+        })
+        .slice(0, 5);
+      setNotifications(alerts);
+    } catch (err) {
+      console.error("Failed to fetch notifications", err);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    toast.success("Logged out successfully");
+    navigate("/admin/login");
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return "AD";
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  };
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const toggleDarkMode = () => {
@@ -68,14 +134,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           {/* Logo */}
           <div className="h-16 border-b border-sidebar-border flex items-center justify-between px-4">
             <Link to="/admin/dashboard" className="flex items-center gap-3 overflow-hidden">
-              <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center shrink-0">
-                <span className="text-sidebar-primary-foreground font-display font-bold text-lg">KN</span>
-              </div>
+              <img src="/logo.png" alt="KNC Logo" className="w-10 h-10 object-contain" />
               <span className={cn(
                 "font-display text-lg font-semibold text-sidebar-foreground whitespace-nowrap transition-opacity",
                 sidebarOpen ? "opacity-100" : "lg:opacity-0"
               )}>
-                Krishna Nagesh
+                Krishna Nagesh Collection
               </span>
             </Link>
             <Button 
@@ -121,7 +185,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           {/* Footer */}
           <div className="p-3 border-t border-sidebar-border">
             <button
-              onClick={() => navigate("/")}
+              onClick={handleLogout}
               className="flex items-center gap-3 px-3 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-200 w-full"
             >
               <LogOut className="w-5 h-5 shrink-0" />
@@ -161,13 +225,109 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               >
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
-              <Button variant="ghost" size="icon" className="text-foreground relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
-              </Button>
-              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-semibold text-sm">AD</span>
-              </div>
+              
+              {/* Notifications Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-foreground relative">
+                    <Bell className="w-5 h-5" />
+                    {notifications.length > 0 && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full animate-pulse" />
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  <DropdownMenuLabel className="flex items-center justify-between">
+                    <span>Notifications</span>
+                    {notifications.length > 0 && (
+                      <span className="text-xs font-normal text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+                        {notifications.length} Priority
+                      </span>
+                    )}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="max-h-80 overflow-auto">
+                    {loadingNotifications ? (
+                      <div className="flex justify-center p-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : notifications.length > 0 ? (
+                      notifications.map((notif: any) => (
+                        <DropdownMenuItem 
+                          key={notif._id} 
+                          className="p-3 cursor-pointer"
+                          onClick={() => navigate('/admin/reminders')}
+                        >
+                          <div className="flex gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                              notif.status === 'overdue' ? "bg-destructive/10" : "bg-warning/10"
+                            )}>
+                              {notif.status === 'overdue' ? (
+                                <AlertTriangle className="w-4 h-4 text-destructive" />
+                              ) : (
+                                <Clock className="w-4 h-4 text-warning" />
+                              )}
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                              <p className="text-sm font-medium leading-none truncate">{notif.partyId?.name || "Multiple Cheques"}</p>
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                ₹{notif.amount.toLocaleString()} - {notif.status === 'overdue' ? 'Overdue' : 'Due Today'}
+                              </p>
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No urgent notifications
+                      </div>
+                    )}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="justify-center text-primary font-medium p-2"
+                    onClick={() => navigate('/admin/reminders')}
+                  >
+                    View all reminders
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                    <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center hover:opacity-90 transition-opacity">
+                      <span className="text-primary-foreground font-semibold text-sm">
+                        {user ? getInitials(user.name) : "AD"}
+                      </span>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.name || "Admin"}</p>
+                      <p className="text-xs leading-none text-muted-foreground">@{user?.adminId || "admin"}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/admin/reminders')}>
+                    <Bell className="mr-2 h-4 w-4" />
+                    <span>Reminders</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 
