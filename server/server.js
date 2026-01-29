@@ -19,7 +19,9 @@ app.use('/api/parties', require('./routes/parties'));
 app.use('/api/cheques', require('./routes/cheques'));
 
 const { initCron } = require('./services/smsService');
+const { initBackupCron } = require('./services/backupService');
 initCron();
+initBackupCron();
 
 app.get('/', (req, res) => {
   res.send('Krishna Cheque Manager API is running...');
