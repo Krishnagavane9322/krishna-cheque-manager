@@ -11,6 +11,7 @@ import AdminParties from "./pages/AdminParties";
 import AdminCheques from "./pages/AdminCheques";
 import AdminReminders from "./pages/AdminReminders";
 import AdminForgotPassword from "./pages/AdminForgotPassword";
+import AdminReports from "./pages/AdminReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/admin/cheques" element={<AdminCheques />} />
           <Route path="/admin/reminders" element={<AdminReminders />} />
           <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -14,7 +14,8 @@ import {
   User,
   AlertTriangle,
   Clock,
-  Loader2
+  Loader2,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ const navItems = [
   { icon: Users, label: "Parties", path: "/admin/parties" },
   { icon: FileText, label: "Cheques", path: "/admin/cheques" },
   { icon: Bell, label: "Reminders", path: "/admin/reminders" },
+  { icon: BarChart3, label: "Reports", path: "/admin/reports" },
 ];
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
