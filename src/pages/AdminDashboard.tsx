@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Users, FileText, Clock, CheckCircle, Plus, ArrowUpRight, TrendingUp, Loader2 } from "lucide-react";
+import { Users, FileText, Clock, CheckCircle, Plus, ArrowUpRight, TrendingUp, Loader2, CloudUpload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
-import { chequesApi } from "@/api/api";
+import { chequesApi, adminApi } from "@/api/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -14,6 +14,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [backingUp, setBackingUp] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -27,6 +28,18 @@ const AdminDashboard = () => {
       toast.error("Failed to fetch dashboard data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBackup = async () => {
+    try {
+      setBackingUp(true);
+      const response = await adminApi.triggerBackup();
+      toast.success(response.data.message || "Backup completed successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to initiate backup");
+    } finally {
+      setBackingUp(false);
     }
   };
 
@@ -93,7 +106,11 @@ const AdminDashboard = () => {
             <h2 className="font-display text-2xl font-bold text-foreground">Welcome back!</h2>
             <p className="text-muted-foreground">Here's an overview of your business</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={handleBackup} variant="outline" disabled={backingUp} className="border-primary/20 hover:bg-primary/5">
+              {backingUp ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CloudUpload className="w-4 h-4 mr-2 text-primary" />}
+              {backingUp ? "Backing up..." : "Backup to Cloud"}
+            </Button>
             <Button onClick={() => navigate("/admin/parties")} variant="outline">
               <Plus className="w-4 h-4 mr-2" />
               Add Party

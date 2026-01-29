@@ -47,4 +47,8 @@ export const chequesApi = {
   getReminders: () => api.get('/cheques/reminders'),
 };
 
+export const adminApi = {
+  triggerBackup: () => api.post('/admin/backup'),
+};
+
 export default api;

@@ -17,6 +17,7 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/parties', require('./routes/parties'));
 app.use('/api/cheques', require('./routes/cheques'));
+app.use('/api/admin', require('./routes/admin'));
 
 const { initCron } = require('./services/smsService');
 const { initBackupCron } = require('./services/backupService');
