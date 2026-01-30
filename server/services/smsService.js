@@ -2,13 +2,33 @@ const cron = require('node-cron');
 const Cheque = require('../models/Cheque');
 const User = require('../models/User');
 
-// SMS sending function (Placeholder for Twilio/other service)
+const axios = require('axios');
+
+// SMS sending function using Fast2SMS
 const sendSMS = async (to, message) => {
-  console.log("\n" + "=".repeat(50));
-  console.log(`[SMS LOG] TO: ${to}`);
-  console.log(`[SMS LOG] MESSAGE: ${message}`);
-  console.log("=".repeat(50) + "\n");
-  return true;
+  try {
+    const response = await axios.post('https://www.fast2sms.com/dev/bulkV2', {
+      "route": "q",
+      "message": message,
+      "language": "english",
+      "numbers": to.replace('+', ''), // Remove + for Fast2SMS
+    }, {
+      headers: {
+        "authorization": process.env.FAST2SMS_API_KEY
+      }
+    });
+
+    if (response.data && response.data.return) {
+      console.log(`[SMS SUCCESS] TO: ${to}`);
+      return true;
+    } else {
+      console.error(`[SMS FAILURE] TO: ${to} - ${JSON.stringify(response.data)}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`[SMS ERROR] TO: ${to} -`, error.response?.data || error.message);
+    return false;
+  }
 };
 
 const checkAndSendNotifications = async () => {
