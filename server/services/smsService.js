@@ -127,4 +127,40 @@ const initCron = () => {
   }, 10000);
 };
 
-module.exports = { initCron, sendSMS };
+// Specialized function for sending OTPs (Much cheaper and better delivery)
+const sendOTP = async (to, otp) => {
+  try {
+    let cleanedNumber = to.replace(/\D/g, '');
+    if (cleanedNumber.length === 12 && cleanedNumber.startsWith('91')) {
+      cleanedNumber = cleanedNumber.substring(2);
+    }
+
+    console.log(`[OTP DEBUG] Sending OTP ${otp} to: ${cleanedNumber}`);
+
+    const response = await axios.post('https://www.fast2sms.com/dev/bulkV2', {
+      "route": "otp",
+      "variables_values": otp,
+      "numbers": cleanedNumber,
+    }, {
+      headers: {
+        "authorization": process.env.FAST2SMS_API_KEY
+      }
+    });
+
+    console.log(`[OTP API RESPONSE] Status: ${response.status} - Data:`, JSON.stringify(response.data));
+
+    if (response.data && response.data.return) {
+      console.log(`[OTP SUCCESS] TO: ${cleanedNumber}`);
+      return true;
+    } else {
+      console.error(`[OTP FAILURE] TO: ${cleanedNumber} - Message: ${response.data.message || 'Unknown error'}`);
+      return false;
+    }
+  } catch (error) {
+    const errorData = error.response?.data || error.message;
+    console.error(`[OTP ERROR] TO: ${to} - Details:`, JSON.stringify(errorData));
+    return false;
+  }
+};
+
+module.exports = { initCron, sendSMS, sendOTP };

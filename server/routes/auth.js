@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { sendSMS } = require('../services/smsService');
+const { sendSMS, sendOTP } = require('../services/smsService');
 const router = express.Router();
 
 // Register Admin
@@ -76,8 +76,8 @@ router.post('/forgot-password', async (req, res) => {
     await user.save();
     console.log('OTP saved to database');
 
-    await sendSMS(phoneNumber, `Your OTP for Krishna Nagesh Collection password reset is: ${otp}. Valid for 10 minutes.`);
-    console.log('SMS Send command executed');
+    await sendOTP(phoneNumber, otp);
+    console.log('OTP Send command executed (via OTP route)');
 
     res.json({ message: 'OTP sent to your registered mobile number' });
   } catch (err) {
