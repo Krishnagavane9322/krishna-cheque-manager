@@ -138,8 +138,9 @@ const sendOTP = async (to, otp) => {
     console.log(`[OTP DEBUG] Sending OTP ${otp} to: ${cleanedNumber}`);
 
     const response = await axios.post('https://www.fast2sms.com/dev/bulkV2', {
-      "route": "otp",
-      "variables_values": otp,
+      "route": "q",
+      "message": `Your KNC verification code is: ${otp}`,
+      "language": "english",
       "numbers": cleanedNumber,
     }, {
       headers: {
