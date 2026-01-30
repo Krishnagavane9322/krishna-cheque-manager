@@ -28,6 +28,10 @@ const { initBackupCron } = require('./services/backupService');
 initCron();
 initBackupCron();
 
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date() });
+});
+
 app.get('/', (req, res) => {
   res.send('Krishna Cheque Manager API is running...');
 });
