@@ -67,37 +67,24 @@ const checkAndSendNotifications = async () => {
 
       const message = `Reminder: Cheque #${cheque.chequeNumber} for ₹${cheque.amount.toLocaleString()} from ${cheque.partyId.name} is due for deposit on ${depositDate.toDateString()}.`;
 
-      const currentHour = new Date().getHours();
+      // Simplified Rules:
+      // 2 days before: 1 time
+      // 1 day before: 1 time
+      // Same day: 1 time (at 7 AM)
 
-      // Rules:
-      // 2 days before: 1 time (9 AM)
-      // 1 day before: 2 times (9 AM and 6 PM)
-      // Same day: 1 time (9 AM)
-
-      if (daysLeft === 2 && currentHour < 12 && cheque.notificationsSent === 0) {
-        // Send 1st reminder (2 days before 9 AM)
+      if (daysLeft === 2 && cheque.notificationsSent < 1) {
         await sendSMS(owner.phoneNumber, message);
         cheque.notificationsSent = 1;
         await cheque.save();
       } 
-      else if (daysLeft === 1) {
-        if (currentHour < 12 && cheque.notificationsSent < 2) {
-          // Send 2nd reminder (1 day before 9 AM)
-          await sendSMS(owner.phoneNumber, message);
-          cheque.notificationsSent = 2;
-          await cheque.save();
-        } 
-        else if (currentHour >= 12 && cheque.notificationsSent < 3) {
-          // Send 3rd reminder (1 day before 6 PM)
-          await sendSMS(owner.phoneNumber, message);
-          cheque.notificationsSent = 3;
-          await cheque.save();
-        }
+      else if (daysLeft === 1 && cheque.notificationsSent < 2) {
+        await sendSMS(owner.phoneNumber, message);
+        cheque.notificationsSent = 2;
+        await cheque.save();
       } 
-      else if (daysLeft === 0 && currentHour < 12 && cheque.notificationsSent < 4) {
-        // Send final reminder (Same day 9 AM)
+      else if (daysLeft === 0 && cheque.notificationsSent < 3) {
         await sendSMS(owner.phoneNumber, `URGENT: ${message}`);
-        cheque.notificationsSent = 4;
+        cheque.notificationsSent = 3;
         await cheque.save();
       }
     }
@@ -107,17 +94,12 @@ const checkAndSendNotifications = async () => {
 };
 
 // Schedule cron jobs
-// Runs at 9:00 AM and 6:00 PM daily
+// Runs at 7:00 AM daily
 const initCron = () => {
   console.log('Initializing notification cron jobs...');
   
-  // 9:00 AM
-  cron.schedule('0 9 * * *', () => {
-    checkAndSendNotifications();
-  });
-
-  // 6:00 PM
-  cron.schedule('0 18 * * *', () => {
+  // 7:00 AM
+  cron.schedule('0 7 * * *', () => {
     checkAndSendNotifications();
   });
 
