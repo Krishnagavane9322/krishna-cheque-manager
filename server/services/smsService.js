@@ -7,26 +7,41 @@ const axios = require('axios');
 // SMS sending function using Fast2SMS
 const sendSMS = async (to, message) => {
   try {
+    // Clean phone number: Standardize to 10 digits for Indian numbers
+    // Remove all non-numeric characters
+    let cleanedNumber = to.replace(/\D/g, '');
+    
+    // If it starts with 91 and is 12 digits, take the last 10
+    if (cleanedNumber.length === 12 && cleanedNumber.startsWith('91')) {
+      cleanedNumber = cleanedNumber.substring(2);
+    }
+    
+    console.log(`[SMS DEBUG] Attempting to send to: ${cleanedNumber}`);
+
     const response = await axios.post('https://www.fast2sms.com/dev/bulkV2', {
       "route": "q",
       "message": message,
       "language": "english",
-      "numbers": to.replace('+', ''), // Remove + for Fast2SMS
+      "numbers": cleanedNumber,
     }, {
       headers: {
         "authorization": process.env.FAST2SMS_API_KEY
       }
     });
 
+    // Exhaustive logging for user to check in Render dashboard
+    console.log(`[SMS API RESPONSE] Status: ${response.status} - Data:`, JSON.stringify(response.data));
+
     if (response.data && response.data.return) {
-      console.log(`[SMS SUCCESS] TO: ${to}`);
+      console.log(`[SMS SUCCESS] TO: ${cleanedNumber}`);
       return true;
     } else {
-      console.error(`[SMS FAILURE] TO: ${to} - ${JSON.stringify(response.data)}`);
+      console.error(`[SMS FAILURE] TO: ${cleanedNumber} - Message: ${response.data.message || 'Unknown error'}`);
       return false;
     }
   } catch (error) {
-    console.error(`[SMS ERROR] TO: ${to} -`, error.response?.data || error.message);
+    const errorData = error.response?.data || error.message;
+    console.error(`[SMS ERROR] TO: ${to} - Details:`, JSON.stringify(errorData));
     return false;
   }
 };
