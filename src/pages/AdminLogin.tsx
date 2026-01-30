@@ -25,7 +25,13 @@ const AdminLogin = () => {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate("/admin/dashboard");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Login failed. Please try again.");
+      if (err.response) {
+        setError(err.response.data?.message || "Login failed. Please try again.");
+      } else if (err.request) {
+        setError("Network error: Cannot reach the server. Please check your VITE_API_URL environment variable and CORS settings.");
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

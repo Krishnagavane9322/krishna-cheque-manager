@@ -42,7 +42,13 @@ const AdminRegister = () => {
       toast.success("Account created successfully. Please login.");
       navigate("/admin/login");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed. Please try again.");
+      if (err.response) {
+        setError(err.response.data?.message || "Registration failed. Please try again.");
+      } else if (err.request) {
+        setError("Network error: Cannot reach the server. Please check your VITE_API_URL environment variable and CORS settings.");
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
