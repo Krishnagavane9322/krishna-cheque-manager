@@ -1,47 +1,41 @@
 const cron = require('node-cron');
 const Cheque = require('../models/Cheque');
 const User = require('../models/User');
+const twilio = require('twilio');
 
-const axios = require('axios');
+// Initialize Twilio client
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = twilio(accountSid, authToken);
 
-// SMS sending function using Fast2SMS
+// SMS sending function using Twilio
 const sendSMS = async (to, message) => {
   try {
-    // Clean phone number: Standardize to 10 digits for Indian numbers
-    // Remove all non-numeric characters
+    // Clean phone number: Standardize to E.164 format (e.g., +91XXXXXXXXXX)
     let cleanedNumber = to.replace(/\D/g, '');
     
-    // If it starts with 91 and is 12 digits, take the last 10
-    if (cleanedNumber.length === 12 && cleanedNumber.startsWith('91')) {
-      cleanedNumber = cleanedNumber.substring(2);
+    // For Indian numbers, prefix with +91 if missing
+    if (cleanedNumber.length === 10) {
+      cleanedNumber = `+91${cleanedNumber}`;
+    } else if (cleanedNumber.length === 12 && cleanedNumber.startsWith('91')) {
+      cleanedNumber = `+${cleanedNumber}`;
+    } else if (!cleanedNumber.startsWith('+')) {
+      // Default fallback for other lengths, adding +
+      cleanedNumber = `+${cleanedNumber}`;
     }
     
-    console.log(`[SMS DEBUG] Attempting to send to: ${cleanedNumber}`);
+    console.log(`[SMS DEBUG] Twilio attempting to send to: ${cleanedNumber}`);
 
-    const response = await axios.post('https://www.fast2sms.com/dev/bulkV2', {
-      "route": "q",
-      "message": message,
-      "language": "english",
-      "numbers": cleanedNumber,
-    }, {
-      headers: {
-        "authorization": process.env.FAST2SMS_API_KEY
-      }
+    const response = await client.messages.create({
+      body: message,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: cleanedNumber
     });
 
-    // Exhaustive logging for user to check in Render dashboard
-    console.log(`[SMS API RESPONSE] Status: ${response.status} - Data:`, JSON.stringify(response.data));
-
-    if (response.data && response.data.return) {
-      console.log(`[SMS SUCCESS] TO: ${cleanedNumber}`);
-      return true;
-    } else {
-      console.error(`[SMS FAILURE] TO: ${cleanedNumber} - Message: ${response.data.message || 'Unknown error'}`);
-      return false;
-    }
+    console.log(`[SMS SUCCESS] SID: ${response.sid} - TO: ${cleanedNumber}`);
+    return true;
   } catch (error) {
-    const errorData = error.response?.data || error.message;
-    console.error(`[SMS ERROR] TO: ${to} - Details:`, JSON.stringify(errorData));
+    console.error(`[SMS ERROR] TO: ${to} - Details:`, error.message);
     return false;
   }
 };
@@ -109,41 +103,10 @@ const initCron = () => {
   }, 10000);
 };
 
-// Specialized function for sending OTPs (Much cheaper and better delivery)
+// Specialized function for sending OTPs using Twilio
 const sendOTP = async (to, otp) => {
-  try {
-    let cleanedNumber = to.replace(/\D/g, '');
-    if (cleanedNumber.length === 12 && cleanedNumber.startsWith('91')) {
-      cleanedNumber = cleanedNumber.substring(2);
-    }
-
-    console.log(`[OTP DEBUG] Sending OTP ${otp} to: ${cleanedNumber}`);
-
-    const response = await axios.post('https://www.fast2sms.com/dev/bulkV2', {
-      "route": "q",
-      "message": `Your KNC verification code is: ${otp}`,
-      "language": "english",
-      "numbers": cleanedNumber,
-    }, {
-      headers: {
-        "authorization": process.env.FAST2SMS_API_KEY
-      }
-    });
-
-    console.log(`[OTP API RESPONSE] Status: ${response.status} - Data:`, JSON.stringify(response.data));
-
-    if (response.data && response.data.return) {
-      console.log(`[OTP SUCCESS] TO: ${cleanedNumber}`);
-      return true;
-    } else {
-      console.error(`[OTP FAILURE] TO: ${cleanedNumber} - Message: ${response.data.message || 'Unknown error'}`);
-      return false;
-    }
-  } catch (error) {
-    const errorData = error.response?.data || error.message;
-    console.error(`[OTP ERROR] TO: ${to} - Details:`, JSON.stringify(errorData));
-    return false;
-  }
+  const message = `Your KNC verification code is: ${otp}`;
+  return await sendSMS(to, message);
 };
 
 module.exports = { initCron, sendSMS, sendOTP };

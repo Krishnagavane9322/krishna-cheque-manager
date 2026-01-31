@@ -26,7 +26,12 @@ app.use('/api', limiter);
 
 // Middleware
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Vite default port
+  origin: [
+    process.env.FRONTEND_URL,
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'http://localhost:3000'
+  ].filter(Boolean),
   credentials: true,
 };
 app.use(cors(corsOptions));
