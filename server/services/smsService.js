@@ -117,4 +117,4 @@ const sendOTP = async (to, otp) => {
   return await sendSMS(to, message);
 };
 
-module.exports = { initCron, sendSMS, sendOTP };
+module.exports = { initCron, sendSMS, sendOTP, checkAndSendNotifications };
