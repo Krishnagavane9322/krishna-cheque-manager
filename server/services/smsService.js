@@ -42,12 +42,14 @@ const sendSMS = async (to, message) => {
 
 const checkAndSendNotifications = async () => {
   console.log('Running scheduled notification check...');
+  const results = { total: 0, sent: 0, errors: [] };
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     // Get all pending cheques
     const cheques = await Cheque.find({ status: 'pending' }).populate('partyId').populate('createdBy');
+    results.total = cheques.length;
 
     for (const cheque of cheques) {
       const depositDate = new Date(cheque.depositDate);
@@ -66,24 +68,30 @@ const checkAndSendNotifications = async () => {
       // 1 day before: 1 time
       // Same day: 1 time (at 7 AM)
 
+      let sent = false;
       if (daysLeft === 2 && cheque.notificationsSent < 1) {
-        await sendSMS(owner.phoneNumber, message);
-        cheque.notificationsSent = 1;
-        await cheque.save();
+        sent = await sendSMS(owner.phoneNumber, message);
+        if (sent) cheque.notificationsSent = 1;
       } 
       else if (daysLeft === 1 && cheque.notificationsSent < 2) {
-        await sendSMS(owner.phoneNumber, message);
-        cheque.notificationsSent = 2;
-        await cheque.save();
+        sent = await sendSMS(owner.phoneNumber, message);
+        if (sent) cheque.notificationsSent = 2;
       } 
       else if (daysLeft === 0 && cheque.notificationsSent < 3) {
-        await sendSMS(owner.phoneNumber, `URGENT: ${message}`);
-        cheque.notificationsSent = 3;
+        sent = await sendSMS(owner.phoneNumber, `URGENT: ${message}`);
+        if (sent) cheque.notificationsSent = 3;
+      }
+
+      if (sent) {
         await cheque.save();
+        results.sent++;
       }
     }
+    return results;
   } catch (err) {
     console.error('Error in notification service:', err);
+    results.errors.push(err.message);
+    return results;
   }
 };
 
@@ -93,13 +101,13 @@ const initCron = () => {
   console.log('Initializing notification cron jobs...');
   
   // 7:00 AM
-  cron.schedule('0 7 * * *', () => {
-    checkAndSendNotifications();
+  cron.schedule('0 7 * * *', async () => {
+    await checkAndSendNotifications();
   });
 
   // For testing purpose, run once 10 seconds after start
-  setTimeout(() => {
-    checkAndSendNotifications();
+  setTimeout(async () => {
+    await checkAndSendNotifications();
   }, 10000);
 };
 

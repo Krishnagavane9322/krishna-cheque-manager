@@ -1,0 +1,17 @@
+name: Cheque Reminder Automation
+
+on:
+  schedule:
+    # Runs at 07:00 AM IST (01:30 AM UTC) every day
+    - cron: "30 1 * * *"
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  trigger-notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Notification Trigger
+        run: |
+          # Replace 'YOUR_RENDER_BACKEND_URL' with your actual Render URL in GitHub Secrets for complete privacy,
+          # or edit this file directly.
+          curl -X GET "${{ secrets.RENDER_BACKEND_URL }}/api/admin/trigger-notifications?secret=${{ secrets.CRON_SECRET }}"
